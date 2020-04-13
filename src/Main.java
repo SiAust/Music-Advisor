@@ -1,4 +1,7 @@
+import java.net.http.HttpResponse;
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class Main {
     private static boolean auth = false;
@@ -43,6 +46,7 @@ public class Main {
                     input = sc.nextLine();
                     break;
                 case "exit":
+//                    HttpUtils.stopHttpServer();
                     break;
                 default:
                     System.out.println("Unknown command. Try again.");
@@ -54,7 +58,18 @@ public class Main {
     }
 
     private static void auth() {
-        System.out.println("https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d&redirect_uri=http://localhost:8080&response_type=code");
+        HttpUtils.startHttpServer();
+        CompletableFuture<String> completableFuture = HttpUtils.get();
+        System.out.println("done?");
+        boolean done = new Scanner(System.in).nextBoolean();
+        if (done) {
+            try {
+                System.out.println(completableFuture.get());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+//        HttpUtils.getResponse();
         System.out.println("---SUCCESS---");
         auth = true;
     }
