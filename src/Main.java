@@ -1,12 +1,17 @@
 import java.net.http.HttpResponse;
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 public class Main {
     private static boolean auth = false;
 
     public static void main(String[] args) {
+        if (args.length > 1) {
+            if (args[0].contains("-access")) {
+                HttpUtils.uri = args[1];
+            } else {
+                HttpUtils.uri = "https://accounts.spotify.com";
+            }
+        }
         play();
     }
 
@@ -58,18 +63,14 @@ public class Main {
     }
 
     private static void auth() {
+        System.out.println("Use this link to request the access code:");
+        System.out.println("https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d&redirect_uri=http://localhost:8080&response_type=code");
         HttpUtils.startHttpServer();
-        CompletableFuture<String> completableFuture = HttpUtils.get();
-        System.out.println("done?");
-        boolean done = new Scanner(System.in).nextBoolean();
-        if (done) {
-            try {
-                System.out.println(completableFuture.get());
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
-//        HttpUtils.getResponse();
+        System.out.println("waiting for code...");
+        HttpUtils.waitForCode();
+        System.out.println("code received");
+        System.out.println("making http request for access_token...\nresponse:");
+        HttpUtils.getToken();
         System.out.println("---SUCCESS---");
         auth = true;
     }
