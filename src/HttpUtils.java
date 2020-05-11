@@ -8,15 +8,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 
 public class HttpUtils {
     private static HttpServer server;
     private static final String CLIENT_ID = "6edb9b1ac21042abacc6daaf0fbc4c4d";
-    private static final String CLIENT_SECRET = "secretKey";
+    private static final String CLIENT_SECRET = ""; // todo: remove before commit
     private static final String REDIRECT_ID = "http://localhost:8080";
 
-    public static String uri;
+    private static String uri = "https://accounts.spotify.com";
     private static String query;
     private static String spotifyCode;
     private static String token;
@@ -31,7 +30,7 @@ public class HttpUtils {
                 public void handle(HttpExchange exchange) throws IOException {
                     query = exchange.getRequestURI().getQuery();
                     String status;
-                    if (query != null && query.contains("code=")) { //todo query .equeals("code=")
+                    if (query != null && query.contains("code=")) {
                         status = "Got the code. Return back to your program.";
                     } else {
                         status = "Not found authorization code. Try again.";
@@ -79,5 +78,13 @@ public class HttpUtils {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static void setUri(String uri) {
+        HttpUtils.uri = uri;
+    }
+
+    public static String getUri() {
+        return uri;
     }
 }

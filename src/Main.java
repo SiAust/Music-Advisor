@@ -5,12 +5,8 @@ public class Main {
     private static boolean auth = false;
 
     public static void main(String[] args) {
-        if (args.length > 1) {
-            if (args[0].contains("-access")) {
-                HttpUtils.uri = args[1];
-            } else {
-                HttpUtils.uri = "https://accounts.spotify.com";
-            }
+        if (args.length > 1 && args[0].contains("-access")) {
+            HttpUtils.setUri(args[1]);
         }
         play();
     }
