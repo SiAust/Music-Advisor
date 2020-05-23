@@ -1,4 +1,4 @@
-package src;
+package com.example;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -17,7 +17,7 @@ public class HttpUtils {
 
     private static HttpServer server;
     private static final String CLIENT_ID = "6edb9b1ac21042abacc6daaf0fbc4c4d";
-    private static final String CLIENT_SECRET = "931ea01e8d944f6c8fec855a295dbd2b"; // todo: remove before commit
+    private static final String CLIENT_SECRET = Config.getSecret(); // todo: put in config/xml file
     private static final String REDIRECT_ID = "http://localhost:8080";
 
     private static String accessUri = "https://accounts.spotify.com";
@@ -47,12 +47,13 @@ public class HttpUtils {
                 }
             });
 
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static void waitForCode() {
+    public static void waitForCode() { // todo: refresh token state? set query null to prevent auth failure?
         while (query == null) {
             try {
                 Thread.sleep(10);
@@ -61,6 +62,7 @@ public class HttpUtils {
             }
         }
         spotifyCode = query.substring(5);
+//        query = null; // so that we can auth again?
         server.stop(1);
     }
 
@@ -77,11 +79,15 @@ public class HttpUtils {
                             + "&redirect_uri=" + REDIRECT_ID))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(response.body());
+//            System.out.println(response.body());
 //            accessToken = response.body();
-            JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject(); // todo: status 200 "success" else failed
+            if (response.statusCode() > 200) {
+                return false;
+                // todo: get status from here and check 200 else fail?
+            }
+            JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
             accessToken = jsonResponse.get("access_token").getAsString();
-            System.out.println(accessToken);
+//            System.out.println(accessToken);
             return true;
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -89,11 +95,45 @@ public class HttpUtils {
         }
     }
 
+    public static String getFromApi(String getType, String playlist) {
+        String path = "";
+        switch (getType) {
+            case "new":
+                path = "/v1/browse/new-releases?limit=4"; // todo: remove limits before test?
+                break;
+            case "categories":
+                path = "/v1/browse/categories";
+                break;
+            case "featured":
+                path = "/v1/browse/featured-playlists?limit=4";
+                break;
+            case "playlists":
+                path = String.format("/v1/browse/categories%s/playlists", playlist); // todo: add formatting for argument playlist type
+        }
+        String responseJson = "";
+        try {
+//            startHttpServer();
+            HttpClient client = HttpClient.newBuilder().build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .header("Authorization", "Bearer " + accessToken)
+                    .uri(URI.create(resourceUri + path))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+//            System.out.println(response.body());
+            responseJson = response.body();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+//        server.stop(1);
+        return responseJson;
+    }
+
     public static void setAccessUri(String accessUri) {
         HttpUtils.accessUri = accessUri;
     }
 
-    public static String getAccessUri() {
-        return accessUri;
+    public static void setResourceUri(String resourceUri) {
+        HttpUtils.resourceUri = resourceUri;
     }
 }

@@ -1,16 +1,32 @@
-package src;
+package com.example;
 
 import java.util.Scanner;
+import java.util.logging.Logger;
 
 public class Main {
-    private static boolean auth = false;
+    // todo: Add a loader to prevent multiple unnecessary HTTP requests?
+    private static boolean auth = false; // todo: debugging
+    private static SpotifyCollection<SpotifyObject> albums;
+    private static SpotifyCollection<SpotifyObject> categories;
+    private static SpotifyCollection<SpotifyObject> featured;
+    private static SpotifyCollection<SpotifyObject> playlists;
+
+    Logger logger = Logger.getLogger(Main.class.getName()); // todo: worth doing?
 
     public static void main(String[] args) {
-        if (args.length > 1 && args[0].contains("-access")) {
-            HttpUtils.setAccessUri(args[1]);
-
+        /*for (String string : args) {
+            System.out.println(string);
+        }*/
+        if (args.length > 1) {
+            if (args[0].contains("-access")) {
+                HttpUtils.setAccessUri(args[1]);
+            }
+            if (args.length > 2) {
+                if (args[2].contains("-resource")) {
+                    HttpUtils.setResourceUri(args[3]);
+                }
+            }
         }
-        System.out.println("Hello main thread");
         play();
     }
 
@@ -25,7 +41,16 @@ public class Main {
             inSplit = input.split(" ");
             playlistType = "";
             if (inSplit.length > 1) {
-                playlistType = inSplit[1];
+                StringBuilder sb = new StringBuilder();
+                for (int i = 1; i < inSplit.length; i++) { // multi word playlists
+                    if (i == inSplit.length - 1) {
+                        sb.append(inSplit[i]);
+                    } else {
+                        sb.append(inSplit[i]).append(" ");
+                    }
+                    playlistType = sb.toString();
+                }
+                System.out.println("inSplit playlistType= " + playlistType);
                 input = inSplit[0];
             }
             switch (input) {
@@ -46,7 +71,7 @@ public class Main {
                     input = sc.nextLine();
                     break;
                 case "playlists":
-                    playlistsMusic(playlistType);
+                    playlistsMusic(playlistType); // todo: more than one word in playlist? Needed? Or is just category name single word?
                     input = sc.nextLine();
                     break;
                 case "exit":
@@ -63,15 +88,19 @@ public class Main {
 
     private static void auth() {
         System.out.println("Use this link to request the access code:");
-        System.out.println("https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d&redirect_uri=http://localhost:8080&response_type=code");
+        System.out.println("https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d"
+                + "&redirect_uri=http://localhost:8080&response_type=code");
         HttpUtils.startHttpServer();
         System.out.println("waiting for code...");
         HttpUtils.waitForCode();
         System.out.println("code received");
         System.out.println("making http request for access_token...\nresponse:");
-        HttpUtils.getAccessToken();
-        System.out.println("---SUCCESS---");
-        auth = true;
+        String status = "---FAILED---";
+        if (HttpUtils.getAccessToken()) {
+            auth = true;
+            status = "---SUCCESS---";
+        }
+        System.out.println(status);
     }
 
     private static boolean checkAuth() {
@@ -85,43 +114,51 @@ public class Main {
         if (!checkAuth()) {
             return;
         }
-        System.out.println("---NEW RELEASES---");
-        System.out.printf("%s [%s, %s, %s]\n", "Mountains", "Sia", "Diplo", "Labrinth");
-        System.out.printf("%s [%s]\n", "Runaway", "Lil Peep");
-        System.out.printf("%s [%s]\n", "The Greatest Show", "Panic! At The Disco");
-        System.out.printf("%s [%s]\n", "All Out Life", "Slipknot");
+        /*SpotifyCollection<SpotifyObject>*/
+        albums = JSONUtils.getAlbumsFromJson(HttpUtils.getFromApi("new", null));
+        albums.printItems();
     }
 
     private static void featuredMusic() {
         if (!checkAuth()) {
             return;
         }
-        System.out.println("---FEATURED---");
-        System.out.println("Mellow Morning");
-        System.out.println("Wake Up and Smell the Coffee");
-        System.out.println("Monday Motivation");
-        System.out.println("Songs to Sing in the Shower");
+        /* SpotifyCollection<SpotifyObject>*/
+        featured = JSONUtils.getFeaturedFromJson(HttpUtils.getFromApi("featured", null));
+        featured.printItems();
+//        System.out.println(HttpUtils.getFromApi("featured"));
     }
 
     private static void categoriesMusic() {
         if (!checkAuth()) {
             return;
         }
-        System.out.println("---CATEGORIES---");
-        System.out.println("Top Lists");
-        System.out.println("Pop");
-        System.out.println("Mood");
-        System.out.println("Latin");
+        /*SpotifyCollection<SpotifyObject>*/
+        categories = JSONUtils.getCategoriesFromJson(HttpUtils.getFromApi("categories", null));
+        categories.printItems();
+//        System.out.println(HttpUtils.getFromApi("categories"));
     }
 
-    private static void playlistsMusic(String genre) {
+    private static void playlistsMusic(String pList) {
+//        System.out.println("playListsMusic pList= " + pList);
         if (!checkAuth()) {
             return;
         }
-        System.out.printf("---%S PLAYLISTS---\n", genre);
-        System.out.println("Walk Like A Badass");
-        System.out.println("Rage Beats");
-        System.out.println("Arab Mood Booster");
-        System.out.println("Sunday Stroll");
+        if (categories == null) {
+            categories = JSONUtils.getCategoriesFromJson(HttpUtils.getFromApi("categories", null));
+        }
+//        System.out.println("contains sleep=" + categories.contains("Sleep"));
+        String playlist = "";
+        int index;
+        if ((index = categories.contains(pList)) >= 0) { //todo: something weird going on (no mood playlist? no sleep?
+            SpotifyCategories object = (SpotifyCategories) categories.get(index);
+            playlist = object.getId();
+//            System.out.println("playlist from object= " + playlist); // show what the object id is
+        }
+//        System.out.println(HttpUtils.getFromApi("playlists"));
+        playlists = JSONUtils.getPlaylistsFromJson(HttpUtils.getFromApi("playlists", "/" + playlist));
+        if (playlists != null) {
+            playlists.printItems();
+        }
     }
 }
