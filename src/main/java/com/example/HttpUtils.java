@@ -1,3 +1,7 @@
+package src;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -10,15 +14,17 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class HttpUtils {
+
     private static HttpServer server;
     private static final String CLIENT_ID = "6edb9b1ac21042abacc6daaf0fbc4c4d";
-    private static final String CLIENT_SECRET = ""; // todo: remove before commit
+    private static final String CLIENT_SECRET = "931ea01e8d944f6c8fec855a295dbd2b"; // todo: remove before commit
     private static final String REDIRECT_ID = "http://localhost:8080";
 
-    private static String uri = "https://accounts.spotify.com";
+    private static String accessUri = "https://accounts.spotify.com";
+    private static String resourceUri = "https://api.spotify.com";
     private static String query;
     private static String spotifyCode;
-    private static String token;
+    private static String accessToken;
 
     public static void startHttpServer() {
         try {
@@ -58,12 +64,12 @@ public class HttpUtils {
         server.stop(1);
     }
 
-    public static boolean getToken() { // to get auth token?
+    public static boolean getAccessToken() { // to get auth token?
         try {
             HttpClient client = HttpClient.newBuilder().build();
             HttpRequest request = HttpRequest.newBuilder()
                     .header("Content-type", "application/x-www-form-urlencoded")
-                    .uri(URI.create(uri + "/api/token"))
+                    .uri(URI.create(accessUri + "/api/token"))
                     .POST(HttpRequest.BodyPublishers.ofString("&client_id=" + CLIENT_ID
                             + "&client_secret=" + CLIENT_SECRET
                             + "&grant_type=authorization_code"
@@ -72,7 +78,10 @@ public class HttpUtils {
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println(response.body());
-            token = response.body(); // todo: status 200 "success" else failed
+//            accessToken = response.body();
+            JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject(); // todo: status 200 "success" else failed
+            accessToken = jsonResponse.get("access_token").getAsString();
+            System.out.println(accessToken);
             return true;
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -80,11 +89,11 @@ public class HttpUtils {
         }
     }
 
-    public static void setUri(String uri) {
-        HttpUtils.uri = uri;
+    public static void setAccessUri(String accessUri) {
+        HttpUtils.accessUri = accessUri;
     }
 
-    public static String getUri() {
-        return uri;
+    public static String getAccessUri() {
+        return accessUri;
     }
 }

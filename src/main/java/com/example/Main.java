@@ -1,4 +1,5 @@
-import java.net.http.HttpResponse;
+package src;
+
 import java.util.Scanner;
 
 public class Main {
@@ -6,8 +7,10 @@ public class Main {
 
     public static void main(String[] args) {
         if (args.length > 1 && args[0].contains("-access")) {
-            HttpUtils.setUri(args[1]);
+            HttpUtils.setAccessUri(args[1]);
+
         }
+        System.out.println("Hello main thread");
         play();
     }
 
@@ -66,7 +69,7 @@ public class Main {
         HttpUtils.waitForCode();
         System.out.println("code received");
         System.out.println("making http request for access_token...\nresponse:");
-        HttpUtils.getToken();
+        HttpUtils.getAccessToken();
         System.out.println("---SUCCESS---");
         auth = true;
     }
