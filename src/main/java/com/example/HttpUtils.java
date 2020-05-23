@@ -1,3 +1,7 @@
+package com.example;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -10,15 +14,17 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class HttpUtils {
+
     private static HttpServer server;
     private static final String CLIENT_ID = "6edb9b1ac21042abacc6daaf0fbc4c4d";
-    private static final String CLIENT_SECRET = ""; // todo: remove before commit
+    private static final String CLIENT_SECRET = Config.getSecret(); // todo: put in config/xml file
     private static final String REDIRECT_ID = "http://localhost:8080";
 
-    private static String uri = "https://accounts.spotify.com";
+    private static String accessUri = "https://accounts.spotify.com";
+    private static String resourceUri = "https://api.spotify.com";
     private static String query;
     private static String spotifyCode;
-    private static String token;
+    private static String accessToken;
 
     public static void startHttpServer() {
         try {
@@ -41,12 +47,13 @@ public class HttpUtils {
                 }
             });
 
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static void waitForCode() {
+    public static void waitForCode() { // todo: refresh token state? set query null to prevent auth failure?
         while (query == null) {
             try {
                 Thread.sleep(10);
@@ -55,15 +62,16 @@ public class HttpUtils {
             }
         }
         spotifyCode = query.substring(5);
+//        query = null; // so that we can auth again?
         server.stop(1);
     }
 
-    public static boolean getToken() { // to get auth token?
+    public static boolean getAccessToken() { // to get auth token?
         try {
             HttpClient client = HttpClient.newBuilder().build();
             HttpRequest request = HttpRequest.newBuilder()
                     .header("Content-type", "application/x-www-form-urlencoded")
-                    .uri(URI.create(uri + "/api/token"))
+                    .uri(URI.create(accessUri + "/api/token"))
                     .POST(HttpRequest.BodyPublishers.ofString("&client_id=" + CLIENT_ID
                             + "&client_secret=" + CLIENT_SECRET
                             + "&grant_type=authorization_code"
@@ -71,8 +79,15 @@ public class HttpUtils {
                             + "&redirect_uri=" + REDIRECT_ID))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(response.body());
-            token = response.body(); // todo: status 200 "success" else failed
+//            System.out.println(response.body());
+//            accessToken = response.body();
+            if (response.statusCode() > 200) {
+                return false;
+                // todo: get status from here and check 200 else fail?
+            }
+            JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
+            accessToken = jsonResponse.get("access_token").getAsString();
+//            System.out.println(accessToken);
             return true;
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -80,11 +95,45 @@ public class HttpUtils {
         }
     }
 
-    public static void setUri(String uri) {
-        HttpUtils.uri = uri;
+    public static String getFromApi(String getType, String playlist) {
+        String path = "";
+        switch (getType) {
+            case "new":
+                path = "/v1/browse/new-releases?limit=4"; // todo: remove limits before test?
+                break;
+            case "categories":
+                path = "/v1/browse/categories";
+                break;
+            case "featured":
+                path = "/v1/browse/featured-playlists?limit=4";
+                break;
+            case "playlists":
+                path = String.format("/v1/browse/categories%s/playlists", playlist); // todo: add formatting for argument playlist type
+        }
+        String responseJson = "";
+        try {
+//            startHttpServer();
+            HttpClient client = HttpClient.newBuilder().build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .header("Authorization", "Bearer " + accessToken)
+                    .uri(URI.create(resourceUri + path))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+//            System.out.println(response.body());
+            responseJson = response.body();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+//        server.stop(1);
+        return responseJson;
     }
 
-    public static String getUri() {
-        return uri;
+    public static void setAccessUri(String accessUri) {
+        HttpUtils.accessUri = accessUri;
+    }
+
+    public static void setResourceUri(String resourceUri) {
+        HttpUtils.resourceUri = resourceUri;
     }
 }
