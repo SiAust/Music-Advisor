@@ -14,6 +14,12 @@ with Spotify and allows access scope to their account. A link to the
 Spotify authentication endpoint is presented to the user, which will open
 in a web browser and redirect to localhost with a "success" 
 or "failure" message directing the user back to the app.
+- "Paginated" output. Users receive query results in pages which
+can be scrolled through with `next` and `prev`.
+    - The number of results on a page is 5 by default but can
+    be amended using the command line argument `-page <n>`
+
+![Example Gif](https://imgur.com/a/37nhkXq)
 
 ### Future plans
 - Integrate code into a JavaFX GUI

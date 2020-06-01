@@ -10,9 +10,17 @@ public class SpotifyCollection<T extends SpotifyObject> {
         this.spotifyCollection = spotifyCollection;
     }
 
-    public void printItems() {
-        for (T object : spotifyCollection) {
-            System.out.println(object.toString());
+    /**
+     * This method prints all SpotifyObjects in a SpotifyCollection to to standard output.
+     * @param n      Print n number of entries
+     * @param pos    Start position of index
+     */
+    public void printItems(int n, int pos) {
+        if (pos + n > spotifyCollection.size() - 1) { // 30 + 10 > 36 == true
+            n -= (pos + n) - (spotifyCollection.size() - 1); // 40 - 35 = 5. n -5 = 5
+        }
+        for (int i = pos; i < pos + n; i++) { // todo: print n number of items, starting from position pos
+            System.out.println(spotifyCollection.get(i).toString());
         }
     }
 
@@ -26,6 +34,10 @@ public class SpotifyCollection<T extends SpotifyObject> {
     }
     public T get(int index) {
         return spotifyCollection.get(index);
+    }
+
+    public int size() {
+        return spotifyCollection.size();
     }
 }
 

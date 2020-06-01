@@ -5,10 +5,16 @@ import com.google.gson.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JSONUtils {
+public class Model {
+
+    private static SpotifyCollection<SpotifyObject> albums;
+    private static SpotifyCollection<SpotifyObject> categories;
+    private static SpotifyCollection<SpotifyObject> featured;
+    private static SpotifyCollection<SpotifyObject> playlists;
 
 
-    public static SpotifyCollection<SpotifyObject> getAlbumsFromJson(String json) {
+    public static SpotifyCollection<SpotifyObject> getAlbums() {
+        String json = HttpUtils.getFromApi("new", null);
         if (json == null) {
             return null;
         }
@@ -37,9 +43,8 @@ public class JSONUtils {
             }
 
             // Get the external Spotify URL for the album
-            JsonObject externalUrl = item.getAsJsonObject().getAsJsonObject("external_urls");
 //            System.out.println(externalUrl.get("spotify"));
-            spotifyUrl = externalUrl.get("spotify").getAsString();
+            spotifyUrl = item.getAsJsonObject().getAsJsonObject("external_urls").get("spotify").getAsString();
 
             // Create a SpotifyAlbum object for each album and add to List of SpotifyObjects
             SpotifyObject spotifyAlbum = new SpotifyAlbum(name, artistsList, spotifyUrl);
@@ -50,8 +55,9 @@ public class JSONUtils {
         return new SpotifyCollection<>(albums);
     }
 
-    public static SpotifyCollection<SpotifyObject> getCategoriesFromJson(String json) {
+    public static SpotifyCollection<SpotifyObject> getCategories() {
 //        System.out.println(json);
+        String json = HttpUtils.getFromApi("categories", null);
         JsonArray items = JsonParser.parseString(json)
                 .getAsJsonObject()
                 .getAsJsonObject("categories")
@@ -61,17 +67,16 @@ public class JSONUtils {
         String id = null;
         List<SpotifyObject> categories = new ArrayList<>();
         for (JsonElement item : items) {
-            JsonObject category = item.getAsJsonObject(); // todo: one-liner
-            name = category.get("name").getAsString();
-            id = category.get("id").getAsString();
+            name = item.getAsJsonObject().get("name").getAsString();
+            id = item.getAsJsonObject().get("id").getAsString();
             SpotifyObject spotifyObject = new SpotifyCategories(name, id);
             categories.add(spotifyObject);
         }
-
         return new SpotifyCollection<>(categories);
     }
 
-    public static SpotifyCollection<SpotifyObject> getFeaturedFromJson(String json) {
+    public static SpotifyCollection<SpotifyObject> getFeatured() {
+        String json = HttpUtils.getFromApi("featured", null);
         JsonArray items = JsonParser.parseString(json)
                 .getAsJsonObject()
                 .getAsJsonObject("playlists")
@@ -81,18 +86,25 @@ public class JSONUtils {
         String name = "";
         List<SpotifyObject> featured = new ArrayList<>();
         for (JsonElement item : items) {
-//            JsonObject featuredItem = item.getAsJsonObject(); // todo: can one-liner this
             name = item.getAsJsonObject().get("name").getAsString();
-//            JsonObject externalUrls = featuredItem.getAsJsonObject("external_urls"); // todo: extend one-liner
             url = item.getAsJsonObject().getAsJsonObject("external_urls").get("spotify").getAsString();
-//            SpotifyObject spotifyObject = new SpotifyFeatured(name, url); // todo: extend one-liner
             featured.add(new SpotifyFeatured(name, url));
-
         }
         return new SpotifyCollection<>(featured);
     }
 
-    public static SpotifyCollection<SpotifyObject> getPlaylistsFromJson(String json) {
+    public static SpotifyCollection<SpotifyObject> getPlaylists(String playlist) {
+        if (categories == null) {
+            categories = Model.getCategories();
+        }
+//        System.out.println("contains sleep=" + categories.contains("Sleep"));
+        int index;
+        if ((index = categories.contains(playlist)) >= 0) { //todo: something weird going on (no mood playlist? no sleep?
+            SpotifyCategories object = (SpotifyCategories) categories.get(index);
+            playlist = object.getId();
+//            System.out.println("playlist from object= " + playlist); // show what the object id is
+        }
+        String json = HttpUtils.getFromApi("playlists", "/" + playlist);
         try {
             JsonArray items = JsonParser.parseString(json)
                     .getAsJsonObject()
@@ -118,5 +130,4 @@ public class JSONUtils {
             return null;
         }
     }
-
 }
