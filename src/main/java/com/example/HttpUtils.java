@@ -17,7 +17,7 @@ public class HttpUtils {
 
     private static HttpServer server;
     private static final String CLIENT_ID = "6edb9b1ac21042abacc6daaf0fbc4c4d";
-    private static final String CLIENT_SECRET = Config.getSecret(); // todo: put in config/xml file
+    private static final String CLIENT_SECRET = Config.getSecret(); // todo: hash the string
     private static final String REDIRECT_ID = "http://localhost:8080";
 
     private static String accessUri = "https://accounts.spotify.com";
@@ -46,7 +46,6 @@ public class HttpUtils {
                     exchange.getResponseBody().close();
                 }
             });
-
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -99,16 +98,16 @@ public class HttpUtils {
         String path = "";
         switch (getType) {
             case "new":
-                path = "/v1/browse/new-releases?limit=4"; // todo: remove limits before test?
+                path = "/v1/browse/new-releases";
                 break;
             case "categories":
-                path = "/v1/browse/categories";
+                path = "/v1/browse/categories?limit=45"; // todo: get complete list of categories.
                 break;
             case "featured":
-                path = "/v1/browse/featured-playlists?limit=4";
+                path = "/v1/browse/featured-playlists";
                 break;
             case "playlists":
-                path = String.format("/v1/browse/categories%s/playlists", playlist); // todo: add formatting for argument playlist type
+                path = String.format("/v1/browse/categories%s/playlists", playlist);
         }
         String responseJson = "";
         try {
@@ -122,6 +121,12 @@ public class HttpUtils {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 //            System.out.println(response.body());
             responseJson = response.body();
+
+         /*   JsonObject limitJson = JsonParser.parseString(responseJson).getAsJsonObject().getAsJsonObject("categories");
+            String limit = limitJson.get("limit").getAsString();
+            String total = limitJson.get("total").getAsString();
+            System.out.println("limit= " + limit + " total= " + total);*/
+
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
