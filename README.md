@@ -19,7 +19,7 @@ can be scrolled through with `next` and `prev`.
     - The number of results on a page is 5 by default but can
     be amended using the command line argument `-page <n>`
 
-![Example Gif](https://imgur.com/a/37nhkXq)
+![Example Gif](https://github.com/SiAust/Music-Advisor/blob/master/example.gif)
 
 ### Future plans
 - Integrate code into a JavaFX GUI
