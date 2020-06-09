@@ -7,13 +7,57 @@ import java.util.List;
 
 public class Model {
 
-    private static SpotifyCollection<SpotifyObject> albums;
-    private static SpotifyCollection<SpotifyObject> categories;
-    private static SpotifyCollection<SpotifyObject> featured;
-    private static SpotifyCollection<SpotifyObject> playlists;
+    private static final ApiRequestSender sender = new ApiRequestSender();
+
+    public static SpotifyCollection<SpotifyObject> getNew() {
+        sender.setMethod(new NewApiRequest());
+        return sender.sendRequest(null);
+    }
+
+    public static SpotifyCollection<SpotifyObject> getFeatured() {
+        sender.setMethod(new FeaturedApiRequest());
+        return sender.sendRequest(null);
+    }
+
+    public static SpotifyCollection<SpotifyObject> getCategories() {
+        sender.setMethod(new CategoriesApiRequest());
+        return sender.sendRequest(null);
+    }
+
+    public static SpotifyCollection<SpotifyObject> getPlaylists(String playlist) {
+        sender.setMethod(new PlaylistsApiRequest());
+        return sender.sendRequest(playlist);
+    }
+}
 
 
-    public static SpotifyCollection<SpotifyObject> getAlbums() {
+class ApiRequestSender {
+
+    ApiRequestMethod method;
+
+    public void setMethod(ApiRequestMethod method) {
+        this.method = method;
+    }
+
+    /**
+     * Uses Strategy design pattern to send a request to the Spotify API to desired endpoint
+     * defined by the ApiRequestMethod child class.
+     * @param playlist should only be used for PlaylistApiRequest method, can be null otherwise.
+     * @return A SpotifyCollection of objects, which is a collection of String's
+     */
+    public SpotifyCollection<SpotifyObject> sendRequest(String playlist) {
+        return this.method.sendRequest(playlist);
+    }
+}
+
+interface ApiRequestMethod {
+    SpotifyCollection<SpotifyObject> sendRequest(String playlist);
+}
+
+class NewApiRequest implements ApiRequestMethod {
+
+    @Override
+    public SpotifyCollection<SpotifyObject> sendRequest(String playlist) {
         String json = HttpUtils.getFromApi("new", null);
         if (json == null) {
             return null;
@@ -23,9 +67,9 @@ public class Model {
                 .getAsJsonObject("albums")
                 .getAsJsonArray("items");
 
-        String name = null;
-        List<String> artistsList = null;
-        String spotifyUrl = null;
+        String name;
+        List<String> artistsList;
+        String spotifyUrl;
         List<SpotifyObject> albums = new ArrayList<>();
 
         for (JsonElement item : items) {
@@ -54,17 +98,21 @@ public class Model {
         }
         return new SpotifyCollection<>(albums);
     }
+}
 
-    public static SpotifyCollection<SpotifyObject> getCategories() {
-//        System.out.println(json);
+class CategoriesApiRequest implements ApiRequestMethod {
+
+    @Override
+    public SpotifyCollection<SpotifyObject> sendRequest(String playlist) {
+        //        System.out.println(json);
         String json = HttpUtils.getFromApi("categories", null);
         JsonArray items = JsonParser.parseString(json)
                 .getAsJsonObject()
                 .getAsJsonObject("categories")
                 .getAsJsonArray("items");
 
-        String name = null;
-        String id = null;
+        String name;
+        String id ;
         List<SpotifyObject> categories = new ArrayList<>();
         for (JsonElement item : items) {
             name = item.getAsJsonObject().get("name").getAsString();
@@ -74,16 +122,20 @@ public class Model {
         }
         return new SpotifyCollection<>(categories);
     }
+}
 
-    public static SpotifyCollection<SpotifyObject> getFeatured() {
+class FeaturedApiRequest implements ApiRequestMethod {
+
+    @Override
+    public SpotifyCollection<SpotifyObject> sendRequest(String playlist) {
         String json = HttpUtils.getFromApi("featured", null);
         JsonArray items = JsonParser.parseString(json)
                 .getAsJsonObject()
                 .getAsJsonObject("playlists")
                 .getAsJsonArray("items");
 
-        String url = "";
-        String name = "";
+        String url;
+        String name;
         List<SpotifyObject> featured = new ArrayList<>();
         for (JsonElement item : items) {
             name = item.getAsJsonObject().get("name").getAsString();
@@ -92,11 +144,18 @@ public class Model {
         }
         return new SpotifyCollection<>(featured);
     }
+}
 
-    public static SpotifyCollection<SpotifyObject> getPlaylists(String playlist) {
-        if (categories == null) {
-            categories = Model.getCategories();
-        }
+class PlaylistsApiRequest implements ApiRequestMethod {
+
+    @Override
+    public SpotifyCollection<SpotifyObject> sendRequest(String playlist) {
+        // Request categories so we can compare to the String playlist
+        ApiRequestSender categoriesRequest = new ApiRequestSender();
+        categoriesRequest.setMethod(new CategoriesApiRequest());
+        SpotifyCollection<SpotifyObject> categories = categoriesRequest.sendRequest(null);
+//            categories = Model.getCategories();
+
 //        System.out.println("contains sleep=" + categories.contains("Sleep"));
         int index;
         if ((index = categories.contains(playlist)) >= 0) { //todo: something weird going on (no mood playlist? no sleep?
@@ -111,8 +170,8 @@ public class Model {
                     .getAsJsonObject("playlists")
                     .getAsJsonArray("items");
 
-            String name = "";
-            String url = "";
+            String name;
+            String url;
             List<SpotifyObject> playlistsList = new ArrayList<>();
             for (JsonElement item : items) {
                 name = item.getAsJsonObject().get("name").getAsString();
@@ -121,7 +180,7 @@ public class Model {
             }
             return new SpotifyCollection<>(playlistsList);
         } catch (JsonSyntaxException | NullPointerException e) {
-//            e.printStackTrace();
+            // Gets the Spotify error message from JSON and returns it.
             System.out.println(JsonParser.parseString(json)
                     .getAsJsonObject()
                     .get("error")

@@ -1,6 +1,9 @@
 package com.example;
 
 public class View {
+
+    MusicGUI musicGUI = new MusicGUI();
+
     private static final View view = new View();
     public SpotifyCollection<SpotifyObject> content;
 
@@ -24,6 +27,9 @@ public class View {
         if (content != null) {
             totalPages = content.size() / numberOfItems + ((content.size() % numberOfItems) > 0 ? 1 : 0); // if there is a remainder add a page
             content.printItems(numberOfItems,0);
+
+            musicGUI.setTextArea(content.printItems());
+
             currentPage = 1;
             printCurrentPage();
         }
@@ -36,6 +42,9 @@ public class View {
                 return;
             }
             content.printItems(numberOfItems, currentPage * numberOfItems);
+
+            musicGUI.setTextArea(content.printItems());
+
             currentPage++;
             printCurrentPage();
             return;
@@ -50,6 +59,9 @@ public class View {
                 return;
             }
             content.printItems(numberOfItems, (currentPage * numberOfItems) - (numberOfItems * 2));
+
+            musicGUI.setTextArea(content.printItems());
+
             currentPage--;
             printCurrentPage();
             return;

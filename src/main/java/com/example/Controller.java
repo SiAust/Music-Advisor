@@ -1,5 +1,7 @@
 package com.example;
 
+import com.google.gson.JsonParser;
+
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
@@ -9,7 +11,9 @@ public class Controller {
 
     // todo: Add a loader to prevent multiple unnecessary HTTP requests?
     private static boolean auth = false; // todo: debugging
-    private static View view = View.getInstance();
+    private static final View view = View.getInstance();
+    private static final String authUrl = "https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d"
+            + "&redirect_uri=http://localhost:8080&response_type=code";
     public static final String ANSI_BLUE = "\u001B[34m";
     public static final String ANSI_RESET = "\u001B[0m";
 
@@ -19,10 +23,11 @@ public class Controller {
         Scanner sc = new Scanner(System.in);
         String input;
         String[] inSplit;
-        String playlistType = "";
+        String playlistType;
 
         input = sc.nextLine();
         do {
+            playlistType = ""; // fixme: fix playlist from previous request being available to "playlists" input
             if ((inSplit = input.split(" ")).length > 1) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 1; i < inSplit.length; i++) { // Multiple word playlists
@@ -59,14 +64,15 @@ public class Controller {
                     view.prev();
                     break;
                 case "exit":
+                    System.out.println("---GOODBYE!---");
+                    MusicGUI.exit();
 //                    HttpUtils.stopHttpServer();
                     break;
                 default:
                     System.out.println("Unknown command. Try again.");
             }
             input = sc.nextLine();
-        } while (!input.equals("exit"));
-        System.out.println("---GOODBYE!---");
+        } while (!input.equals("exit")); // fixme exit waits for GUI to close. Close GUI here!
     }
 
     private static void auth() {
@@ -81,15 +87,11 @@ public class Controller {
             e.printStackTrace();
         }
         try {
-            Desktop.getDesktop().browse(URI.create("https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d"
-                    + "&redirect_uri=http://localhost:8080&response_type=code"));
+            Desktop.getDesktop().browse(URI.create(authUrl));
         } catch (IOException e) {
             System.out.println("Failed to open browser automatically.\nUse this link to request the access code:");
-            System.out.println("https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d"
-                    + "&redirect_uri=http://localhost:8080&response_type=code");
+            System.out.println(authUrl);
         }
-//        System.out.println("https://accounts.spotify.com/authorize?client_id=6edb9b1ac21042abacc6daaf0fbc4c4d"
-//                + "&redirect_uri=http://localhost:8080&response_type=code");
         HttpUtils.startHttpServer();
         System.out.println("waiting for code...");
         HttpUtils.waitForCode();
@@ -101,7 +103,9 @@ public class Controller {
             status = "---SUCCESS---";
         }
         System.out.println(status);
-    }
+        System.out.println("Welcome " + JsonParser.parseString(HttpUtils.getFromApi("user",null))
+                            .getAsJsonObject().get("display_name").getAsString().replaceAll("\"", "") + "!");
+        } //todo: add this to model and say goodbye to <user>
 
     private static boolean checkAuth() {
         if (!auth) {
@@ -114,7 +118,7 @@ public class Controller {
         if (!checkAuth()) {
             return;
         }
-        view.setContent(Model.getAlbums());
+        view.setContent(Model.getNew());
         view.update();
     }
 
@@ -132,11 +136,9 @@ public class Controller {
         }
         view.setContent(Model.getCategories());
         view.update();
-//        System.out.println(HttpUtils.getFromApi("categories"));
     }
 
     private static void playlistsMusic(String playlist) {
-//        System.out.println("playListsMusic playlist= " + playlist);
         if (!checkAuth()) {
             return;
         }

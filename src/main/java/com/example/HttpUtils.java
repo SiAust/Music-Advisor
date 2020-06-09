@@ -108,6 +108,9 @@ public class HttpUtils {
                 break;
             case "playlists":
                 path = String.format("/v1/browse/categories%s/playlists", playlist);
+                break;
+            case "user":
+                path = "/v1/me";
         }
         String responseJson = "";
         try {
