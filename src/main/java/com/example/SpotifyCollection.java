@@ -24,6 +24,15 @@ public class SpotifyCollection<T extends SpotifyObject> {
         }
     }
 
+    // Temp method to display content in JFrame JLabel
+    public String printItems() {
+        StringBuilder sb = new StringBuilder();
+        for (SpotifyObject object : spotifyCollection) {
+            sb.append(object.toString());
+        }
+        return sb.toString();
+    }
+
     public int contains(String name) {
         for (int i = 0; i < spotifyCollection.size(); i++) {
             if (spotifyCollection.get(i).getName().toLowerCase().equals(name.toLowerCase())) {
@@ -66,9 +75,9 @@ class SpotifyAlbum extends SpotifyObject {
 
     @Override
     public String toString() {
-        return super.getName() + "\n" + artists + "\n" + spotifyUrl + "\n";
+        return super.getName() + "\n" + artists + "\n" + spotifyUrl + "\n\n";
     }
-}
+} // fixme: double "\n" to space out objects in JTextArea
 
 class SpotifyCategories extends SpotifyObject {
     private String id;
@@ -80,8 +89,8 @@ class SpotifyCategories extends SpotifyObject {
 
     @Override
     public String toString() {
-        return super.getName();
-    }
+        return super.getName() + "\n";
+    } // fixme: "\n" to create newline in JTextArea
 
     public String getId() {
         return id;
@@ -98,8 +107,8 @@ class SpotifyFeatured extends SpotifyObject {
 
     @Override
     public String toString() {
-        return super.getName() + "\n" + url + "\n";
-    }
+        return super.getName() + "\n" + url + "\n\n";
+    } // fixme: double "\n" to space out objects in JTextArea
 }
 
 class SpotifyPlaylists extends SpotifyObject {
@@ -112,6 +121,6 @@ class SpotifyPlaylists extends SpotifyObject {
 
     @Override
     public String toString() {
-        return super.getName() + "\n" + url + "\n";
-    }
+        return super.getName() + "\n" + url + "\n\n";
+    } // fixme: double "\n" to space out objects in JTextArea
 }
